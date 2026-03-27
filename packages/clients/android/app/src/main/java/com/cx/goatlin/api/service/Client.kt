@@ -28,7 +28,7 @@ interface Client {
         }
 
         fun create(): Client {
-            val hostname: String = PreferenceHelper.getString("ip_address", "127.0.0.1")
+            val hostname: String = PreferenceHelper.getString("ip_address", "10.0.2.2")
             val port: String = PreferenceHelper.getString("port", "8080")
             val baseUrl: String = "http://${hostname}:${port}"
 
