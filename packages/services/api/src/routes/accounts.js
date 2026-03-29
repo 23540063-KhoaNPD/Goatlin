@@ -26,7 +26,16 @@ router.post('/accounts', async (req, res, next) => {
     }
 });
 
-router.put('/accounts/:username/notes/:note', auth, async (req, res, next) => {
+function ownership(req, res, next) {
+    if(req.params.username !== req.account.username){
+        res.statusMessage = "Unauthorized"
+        return res.status(403).end();
+    }
+    next();
+    
+}
+
+router.put('/accounts/:username/notes/:note', [auth, ownership], async (req, res, next) => {
     const rawNote = {
         ...req.body,
         id: req.params.note,
@@ -53,7 +62,7 @@ router.put('/accounts/:username/notes/:note', auth, async (req, res, next) => {
     }
 });
 
-router.get('/accounts/:username/notes', auth, async (req, res, next) => {
+router.get('/accounts/:username/notes', [auth, ownership], async (req, res, next) => {
     try {
         const notes = await Note.find({owner: req.params.username}, null,
             {lean: true}).exec();

@@ -11,6 +11,8 @@ import android.widget.AutoCompleteTextView
 import com.cx.goatlin.api.model.Account
 import com.cx.goatlin.api.service.Client
 import com.cx.goatlin.helpers.DatabaseHelper
+import com.cx.goatlin.helpers.PasswordHelper
+import org.mindrot.jbcrypt.BCrypt
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -36,13 +38,24 @@ class SignupActivity : AppCompatActivity() {
         val password: String = this.password.text.toString()
         val confirmPassword: String = this.confirmPassword.text.toString()
 
+        if(!PasswordHelper.strength(password)){
+            this.password.error = """|Weak password. Please use:" +
+                    "                                  |* both upper and lower case letters" +
+                    "                                  |* numbers" +
+                    "                                  |* special characters (e.g. !"#$%&')" +
+                    "                                  |* from 10 to 128 characters sequence"""
+                    .trimMargin()
+            return;
+        }
+
         if (confirmPassword != password) {
             this.confirmPassword.error = "Passwords don't match"
             this.confirmPassword.requestFocus()
             return;
         }
 
-        val account: Account = Account(name, email, password)
+        val hashedPassword: String = BCrypt.hashpw(password, BCrypt.gensalt())
+        val account: Account = Account(name, email, hashedPassword)
 
         val call: Call<Void> = apiService.signup(account)
 

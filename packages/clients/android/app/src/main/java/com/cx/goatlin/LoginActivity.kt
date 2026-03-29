@@ -22,13 +22,16 @@ import android.content.pm.PackageManager
 import android.support.annotation.RequiresApi
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
+import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import com.cx.goatlin.helpers.DatabaseHelper
 import com.cx.goatlin.helpers.PreferenceHelper
+import com.cx.goatlin.helpers.RootedDetectionHelper
 import com.cx.goatlin.models.Account
 import kotlinx.android.synthetic.main.activity_login.*
+import org.mindrot.jbcrypt.BCrypt
 import java.lang.Exception
 
 /**
@@ -46,6 +49,11 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
         PreferenceHelper.init(applicationContext)
 
         setContentView(R.layout.activity_login)
+
+        if(RootedDetectionHelper.check(applicationContext)){
+            forceCloseApp()
+        }
+
         // Set up the login form.
         populateAutoComplete()
         password.setOnEditorActionListener(TextView.OnEditorActionListener { _, id, _ ->
@@ -61,6 +69,21 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
             val intent = Intent(this, SignupActivity::class.java)
             startActivity(intent)
         }
+    }
+
+    private  fun forceCloseApp(){
+        val dialog: AlertDialog.Builder = AlertDialog.Builder(this)
+
+        dialog.setMessage("Application not run on rooted devices")
+                .setCancelable(false)
+                .setPositiveButton("Close app", DialogInterface.OnClickListener{_, _ -> finish()
+                })
+
+        val alert: AlertDialog = dialog.create()
+
+        alert.setTitle("Unsafe device")
+        alert.show()
+
     }
 
     private fun checkAndPromptUserToGrantPermissions() {
@@ -228,16 +251,16 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
     inner class UserLoginTask internal constructor(private val mUsername: String, private val mPassword: String) : AsyncTask<Void, Void, Boolean>() {
 
         override fun doInBackground(vararg params: Void): Boolean? {
-            if ((mUsername == "Supervisor") and (mPassword == "MySuperSecretPassword123!")){
-                return true
-            }
-            else {
+
                 try {
                     val account: Account = DatabaseHelper(applicationContext).getAccount(mUsername)
 
-                    if (mPassword != account.password) {
-                        return false;
+                    if(!BCrypt.checkpw(mPassword, account.password)){
+                        return  false
                     }
+//                    if (mPassword != account.password) {
+//                        return false;
+//                    }
 
                     val prefs: SharedPreferences = applicationContext.getSharedPreferences(
                             applicationContext.packageName, Context.MODE_PRIVATE)
@@ -250,7 +273,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
                 } catch(e: Exception){
                     return false
                 }
-            }
+
         }
 
         override fun onPostExecute(success: Boolean?) {

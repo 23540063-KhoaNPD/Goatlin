@@ -9,6 +9,8 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
+import okhttp3.OkHttpClient
+import okhttp3.CertificatePinner
 
 interface Client {
     @POST("accounts")
@@ -30,12 +32,23 @@ interface Client {
         fun create(): Client {
             val hostname: String = PreferenceHelper.getString("ip_address", "10.0.2.2")
             val port: String = PreferenceHelper.getString("port", "8080")
-            val baseUrl: String = "http://${hostname}:${port}"
+            val baseUrl: String = "https://${hostname}:${port}"
+
+            val certificatePinner = CertificatePinner.Builder()
+                    .add(baseUrl, "sha256/L9AodObY3yS5s7MVa+jEGJR/RJA0v2xjLWS+pPlcgU=")
+                    .build()
+
+            val client: OkHttpClient = OkHttpClient.Builder()
+                    .certificatePinner(certificatePinner)
+                    .build()
+
+
 
             val retrofit = Retrofit.Builder()
                     .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                     .addConverterFactory(GsonConverterFactory.create())
                     .baseUrl(baseUrl)
+                    .client(client)
                     .build()
 
             return retrofit.create(Client::class.java)
